@@ -1,22 +1,17 @@
 {
   "inputs": [
     {
-      "key": "name",
-      "title": "Product Name",
-      "description": "The name of your product",
+      "key": "email_address",
+      "title": "Email Address",
+      "description": "Your email address (only Gmail is supported at the moment)",
       "type": "string"
     },
     {
-      "key": "tagline",
-      "title": "Product Tagline",
-      "description": "The tagline of your product",
-      "type": "string"
-    },
-    {
-      "key": "description",
-      "title": "Product Description",
-      "description": "The description of your product",
-      "type": "string"
+      "key": "email_password",
+      "title": "Email Password",
+      "description": "Your email password (you need to enable less secure apps in your Gmail account settings, and get an app password if you have 2FA enabled)",
+      "type": "string",
+      "secure": true
     },
     {
       "key": "OPENAI_API_KEY",

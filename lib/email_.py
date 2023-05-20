@@ -1,11 +1,24 @@
-import imaplib
 import email
-import smtplib
-from email.mime.text import MIMEText
-from datetime import date, timedelta
-import time
+import imaplib
+import os
 import re
+import smtplib
+import time
+from datetime import date, datetime, timedelta
 from html import unescape
+from langchain.chat_models import ChatOpenAI
+from langchain import PromptTemplate, LLMChain
+from langchain.prompts.chat import (
+    ChatPromptTemplate,
+    SystemMessagePromptTemplate,
+    AIMessagePromptTemplate,
+    HumanMessagePromptTemplate,
+)
+from langchain.schema import (
+    AIMessage,
+    HumanMessage,
+    SystemMessage
+)
 
 # Define a function to remove HTML and CSS
 
@@ -43,15 +56,20 @@ def get_daily_email_summary(email_address, email_password, imap_server, smtp_ser
     imap_server.login(IMAP_USERNAME, IMAP_PASSWORD)
     imap_server.select('inbox')
 
-    # Get the date of today
-    today = date.today()
+    # Get the date of the last check
+    last_check = os.getenv('LAST_CHECK')
+    if last_check is None:
+        # Get the date of today
+        today = date.today()
+        # If there's no previous check, set it to UNIX epoch
+        last_check = today.strftime("%d-%b-%Y")
+    print(f"Last check: {last_check}")
 
-    # Set the search criteria for emails received today
-    search_criteria = f'(SINCE "{today.strftime("%d-%b-%Y")}")'
+    # Set the search criteria for emails received since last check
+    search_criteria = f'(SINCE "{last_check}")'
 
-    # Search for emails from the specified email address received today
-    status, messages = imap_server.search(
-        None, search_criteria)
+    # Search for emails from the specified email address received since last check
+    status, messages = imap_server.search(None, search_criteria)
 
     # Get the list of message IDs as a list of strings
     message_ids = messages[0].split(b' ')
@@ -69,41 +87,25 @@ def get_daily_email_summary(email_address, email_password, imap_server, smtp_ser
                     body = part.get_payload(decode=True)
                     body = remove_html_css(body.decode())
                     messages_flt.append({
+                        "id": message_id,
                         "from": email_message["From"],
                         "body": body
                     })
-                    # print(f"Message {message_id.decode()}: {body}")
 
     print(f"Found {len(messages_flt)} messages")
+
+    # Update the last check
+    now = datetime.now()
+    os.environ['LAST_CHECK'] = now.strftime("%d-%b-%Y")
+    print(f"Updated last check: {now.strftime('%d-%b-%Y')}")
 
     # Close the IMAP connection
     imap_server.close()
     imap_server.logout()
 
-    # return
+    # return
     return messages_flt
 
-def send_email(email_address, email_password, smtp_server, smtp_port, smtp_username, smtp_password, to, subject, body):
-    # SMTP server settings
-    SMTP_SERVER = smtp_server
-    SMTP_PORT = smtp_port
-    SMTP_USERNAME = smtp_username
-    SMTP_PASSWORD = smtp_password
-
-    # Create the email
-    msg = MIMEText(body)
-    msg['Subject'] = subject
-    msg['From'] = email_address
-    msg['To'] = to
-
-    # Connect to the SMTP server and send the email
-    smtp_server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-    smtp_server.ehlo()
-    smtp_server.starttls()
-    smtp_server.ehlo()
-    smtp_server.login(SMTP_USERNAME, SMTP_PASSWORD)
-    smtp_server.sendmail(email_address, to, msg.as_string())
-    smtp_server.close()
 
 def format_emails_into_prompt(emails):
     prompt = ""
@@ -113,6 +115,38 @@ def format_emails_into_prompt(emails):
 
     return prompt
 
-def send_email_with_summary(history):
-    return "Email sent!"
-    
+def parse_email(email):
+    chat = ChatOpenAI(temperature=0)
+
+    messages = [
+        SystemMessage(
+            content="""
+      You are EmailParserGPT. Your job is to parse information out of an email.
+
+      FIELDS: Your output must be a JSON object with only the following fields:
+
+      """ + os.environ["fields"] + """
+
+      INSTRUCTIONS: These fields should be determined according to the following: 
+      
+      """ + os.environ["instructions"] + """
+
+      Respond only with JSON in the following format:
+
+      {{
+        json: {{
+            "field_1": ...,
+            "field_2": ...,
+            "field_3": ...,
+            ...
+        }},
+        error: "Error message" || null  # if there is an error, return an error message
+      }}
+      """)
+    ]
+
+    messages.append(HumanMessage(content=email))
+
+    res = chat(messages)
+
+    return res.content
