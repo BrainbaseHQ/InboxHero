@@ -86,7 +86,6 @@ def get_daily_email_summary(email_address, email_password, imap_server, smtp_ser
                 if content_type == 'text/plain':
                     try:
                         body = part.get_payload(decode=True)
-                        print(body)
                         body = remove_html_css(body.decode('utf-8'))
                         messages_flt.append({
                             "id": message_id,
