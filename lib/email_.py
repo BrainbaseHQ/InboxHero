@@ -84,13 +84,17 @@ def get_daily_email_summary(email_address, email_password, imap_server, smtp_ser
             for part in email_message.walk():
                 content_type = part.get_content_type()
                 if content_type == 'text/plain':
-                    body = part.get_payload(decode=True)
-                    body = remove_html_css(body.decode())
-                    messages_flt.append({
-                        "id": message_id,
-                        "from": email_message["From"],
-                        "body": body
-                    })
+                    try:
+                        body = part.get_payload(decode=True)
+                        print(body)
+                        body = remove_html_css(body.decode('utf-8'))
+                        messages_flt.append({
+                            "id": message_id,
+                            "from": email_message["From"],
+                            "body": body
+                        })
+                    except:
+                        pass
 
     print(f"Found {len(messages_flt)} messages")
 
