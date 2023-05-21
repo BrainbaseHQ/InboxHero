@@ -1,6 +1,13 @@
 {
   "inputs": [
     {
+      "key": "OPENAI_API_KEY",
+      "title": "OpenAI API Key",
+      "description": "Your OpenAI API key",
+      "type": "string",
+      "secure": true
+    },
+    {
       "key": "email_address",
       "title": "Email Address",
       "description": "Your email address (only Gmail is supported at the moment)",
@@ -14,11 +21,18 @@
       "secure": true
     },
     {
-      "key": "OPENAI_API_KEY",
-      "title": "OpenAI API Key",
-      "description": "Your OpenAI API key",
+      "key": "fields",
+      "title": "Fields",
+      "description": "Fields to fill in",
       "type": "string",
-      "secure": true
+      "secure": false
+    },
+    {
+      "key": "instructions",
+      "title": "Instructions",
+      "description": "Instructions for the AI to follow",
+      "type": "string",
+      "secure": false
     }
   ]
 }

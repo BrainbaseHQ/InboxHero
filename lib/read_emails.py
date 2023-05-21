@@ -1,20 +1,19 @@
 import json
 import os
 
-from email_ import get_daily_email_summary, parse_email
-from sql import create_database, insert_into_database, check_if_id_exists
+from lib.email_ import get_daily_email_summary, parse_email
+from lib.sql import create_database, insert_into_database, check_if_id_exists
 
-if __name__ == '__main__':
+def save_emails_to_db():
     #  get emails
-    emails = get_daily_email_summary(email_address="egrigokhan@gmail.com",  #   os.environ.get("email_address"),
-                                     # os.environ.get("email_password"),
-                                     email_password="lnsoymygykdujqwe",
+    emails = get_daily_email_summary(email_address=os.environ.get("email_address"),
+                                     email_password=os.environ.get("email_password"),
                                      imap_server="imap.gmail.com",
                                      smtp_server="smtp.gmail.com",
                                      smtp_port=587,
                                      #  os.environ.get("email_address"),
-                                     smtp_username="egrigokhan@gmail.com",
-                                     smtp_password="lnsoymygykdujqwe")  # os.environ.get("email_password"))
+                                     smtp_username=os.environ.get("email_address"),
+                                     smtp_password=os.environ.get("email_password"))
 
     #   parse emails
     for email in emails:
@@ -87,8 +86,3 @@ if __name__ == '__main__':
         else:
             print("NOT PARSING", exists)
             pass
-
-    #  write emails in emails.txt
-    with open("/Users/gokhanegri/Documents/brainbase/examples/InboxHero/emails.txt", "w") as f:
-        for email in emails:
-            f.write(f"{email['from']} - {email['body']}\n")
